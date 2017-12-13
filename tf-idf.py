@@ -49,14 +49,14 @@ def evaluate(test_labels, predictions):
     precision = precision_score(test_labels, predictions, average='micro')
     recall = recall_score(test_labels, predictions, average='micro')
     f1 = f1_score(test_labels, predictions, average='micro')
-    print("Micro-average quality numbers")
+    print("Micro average quality numbers")
     print("Precision: {:.4f}, Recall: {:.4f}, F1-measure: {:.4f}".format(precision, recall, f1))
 
     precision = precision_score(test_labels, predictions, average='macro')
     recall = recall_score(test_labels, predictions, average='macro')
     f1 = f1_score(test_labels, predictions, average='macro')
 
-    print("Macro-average quality numbers")
+    print("Macro average quality numbers")
     print("Precision: {:.4f}, Recall: {:.4f}, F1-measure: {:.4f}".format(precision, recall, f1))
     
 
