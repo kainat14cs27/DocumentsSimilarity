@@ -25,7 +25,7 @@ classifier_model_location = 'model/classifier-model.bin'
 taggedDocuments = [TaggedDocument(words=word_tokenize(reuters.raw(fileId)), tags=[i]) for i, fileId in enumerate(reuters.fileids())]
 shuffle(taggedDocuments)
 
-# Create and train the doc2vec model
+# Create and train the Doc2Vec model
 doc2vec = Doc2Vec(size=doc2vec_dimensions, min_count=2, iter=10, workers=12)
 
 # Build the word2vec model from the corpus
