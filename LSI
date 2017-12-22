@@ -44,7 +44,7 @@ def represent(documents):
     svd = TruncatedSVD(100)
     lsa = make_pipeline(svd, Normalizer(copy=False))
 
-    # Run SVD on the training data, then project the training data.
+    # Run svd on the training data, then project the training data.
     X_train_lsa = lsa.fit_transform(vectorised_train_documents)
 
     print("  done in %.3fsec" % (time.time() - t0))
