@@ -1,0 +1,83 @@
+from nltk.corpus import stopwords, reuters
+from nltk import word_tokenize
+
+from nltk.stem import WordNetLemmatizer
+import numpy as np
+import string
+
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.preprocessing import MultiLabelBinarizer
+from sklearn.svm import LinearSVC
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.metrics import f1_score, precision_score, recall_score
+
+
+stop = set(stopwords.words('english'))
+exclude = set(string.punctuation) 
+lemma = WordNetLemmatizer()
+def clean(doc):
+    stop_free = " ".join([i for i in doc.lower().split() if i not in stop])
+    punc_free = ''.join(ch for ch in stop_free if ch not in exclude)
+    normalized = " ".join(lemma.lemmatize(word) for word in punc_free.split())
+    return normalized
+
+
+
+
+# Creating the term dictionary of our courpus, where every unique term is assigned an index.
+documents = reuters.fileids()
+train_docs_id = list(filter(lambda doc: doc.startswith("train"), documents))
+test_docs_id = list(filter(lambda doc: doc.startswith("test"), documents))
+
+train_docs = [clean(reuters.raw(doc_id)) for doc_id in train_docs_id]
+test_docs = [clean(reuters.raw(doc_id)) for doc_id in test_docs_id]
+    
+# Transform multilabel labels
+mlb = MultiLabelBinarizer()
+train_labels = mlb.fit_transform([reuters.categories(doc_id) for doc_id in train_docs_id]) 
+test_labels = mlb.transform([reuters.categories(doc_id) for doc_id in test_docs_id])
+    
+
+no_features = 1000
+
+
+# LDA can only use raw term counts for LDA because it is a probabilistic graphical model
+tf_vectorizer = CountVectorizer(max_df=0.95, min_df=2, max_features=no_features, stop_words='english')
+tf = tf_vectorizer.fit_transform(train_docs)
+tf_test = tf_vectorizer.transform(test_docs)
+tf_feature_names = tf_vectorizer.get_feature_names()
+
+
+from sklearn.decomposition import LatentDirichletAllocation as LDA
+lda = LDA(n_topics=70, max_iter=50, learning_method='online')
+lda.fit(tf)
+
+training_features = lda.transform(tf)
+testing_features = lda.transform(tf_test)
+
+
+
+#lda is our doc-topic distribution that we can use for feature vector to our SVM model.
+
+classifier = OneVsRestClassifier(LinearSVC(random_state=42))
+classifier.fit(training_features, train_labels)
+
+predictions = classifier.predict(testing_features)
+
+precision = precision_score(test_labels, predictions, average='micro')
+recall = recall_score(test_labels, predictions, average='micro')
+f1 = f1_score(test_labels, predictions, average='micro')
+print("Micro-average quality numbers")
+print("Precision: {:.4f}, Recall: {:.4f}, F1-measure: {:.4f}".format(precision, recall, f1))
+
+
+def print_top_words(model, feature_names, n_top_words):
+    for topic_idx, topic in enumerate(model.components_):
+        message = "Topic #%d: " % topic_idx
+        message += " ".join([feature_names[i]
+                             for i in topic.argsort()[:-n_top_words - 1:-1]])
+        print(message)
+    print()
+
+n_top_words = 10
+print_top_words(lda, tf_feature_names, n_top_words)
